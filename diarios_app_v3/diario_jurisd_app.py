@@ -16,17 +16,26 @@ def salvar_resultados(resultados, caminho_saida):
 # Função para gerar PDFs filtrando decisões por critérios
 def gerar_pdf_decisoes_filtradas(decisoes, filtros, pasta_saida="data/pdf_decisoes"):
     os.makedirs(pasta_saida, exist_ok=True)
+    contador = 1
     for texto in decisoes:
         if not atende_filtros(texto, filtros):
             continue
         numero_processo = extrair_numero_processo(texto)
-        nome_arquivo = f"Ementa decisão nº {numero_processo}.pdf" if numero_processo else "decisao_sem_numero.pdf"
+        if numero_processo:
+            nome_arquivo = f"Ementa decisão nº {numero_processo}.pdf"
+        else:
+            nome_arquivo = f"decisao_sem_numero_{contador}.pdf"
+            contador += 1
+
+        caminho_arquivo = os.path.join(pasta_saida, nome_arquivo)
         pdf = FPDF()
         pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=15)
         pdf.set_font("Arial", size=12)
         for linha in texto.split('\n'):
             pdf.multi_cell(0, 10, linha)
-        pdf.output(os.path.join(pasta_saida, nome_arquivo))
+        pdf.output(caminho_arquivo)
+        print(f"Salvo: {caminho_arquivo}")
 
 # Regex para identificar número do processo
 def extrair_numero_processo(texto):
@@ -68,7 +77,10 @@ if __name__ == '__main__':
         if not caminho:
             return
         with open(caminho, 'r', encoding='utf-8') as f:
-            decisoes = f.read().split('\n\n')
+            decisoes = [d.strip() for d in f.read().split('\n\n') if d.strip()]
+        if not decisoes:
+            messagebox.showerror("Erro", "Nenhuma decisão encontrada no arquivo.")
+            return
         gerar_pdf_decisoes_filtradas(decisoes, filtros)
         messagebox.showinfo("Sucesso", "PDFs gerados com sucesso!")
 
@@ -98,4 +110,3 @@ if __name__ == '__main__':
     ttk.Button(root, text="Gerar PDFs", command=gerar_pdf).grid(row=5, columnspan=2, pady=10)
 
     root.mainloop()
-
